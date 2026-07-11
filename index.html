@@ -20,7 +20,6 @@
     
     .last-updated { font-size: 13px; color: #5f6368; font-style: italic; margin-bottom: 15px; font-weight: 500; }
     
-    /* Dynamic Blurred Container */
     #captureArea { padding: 10px 0; background: white; transition: filter 0.3s ease; }
     
     .report-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; margin-bottom: 15px; }
@@ -41,70 +40,78 @@
     .bold-row td { font-weight: bold !important; }
     .num { text-align: right; white-space: nowrap; }
     
-    /* ⚡ ADVANCED 3D ELECTRIC LOADER CSS ⚡ */
+    /* ⚡ 3D MOBILE ELECTRIC MATRIX LOADING ANIMATION ⚡ */
     #loadingWrapper {
       display: none;
       position: absolute;
       top: 55%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 999;
-      text-align: center;
+      perspective: 300px; /* 3D Depth Perspective like mobile image */
     }
     
-    /* 3D Electric Ring Spinner */
-    .electric-spinner {
+    .electric-container {
+      width: 120px;
+      height: 120px;
       position: relative;
-      width: 80px; height: 80px;
-      margin: 0 auto 15px auto;
-      border-radius: 50%;
-      background: linear-gradient(45deg, transparent, transparent 40%, #00f2fe);
-      animation: animateElectric 1s linear infinite;
+      transform-style: preserve-3d;
+      margin: 0 auto 20px auto;
     }
-    .electric-spinner:before {
-      content: '';
-      position: absolute;
-      top: 6px; left: 6px; right: 6px; bottom: 6px;
-      background: #fff;
-      border-radius: 50%;
-      z-index: 1000;
-    }
-    .electric-spinner:after {
-      content: '';
+    
+    /* Creating the Glowing Perspective Electric Rings */
+    .neon-ring {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg, transparent, transparent 40%, #00f2fe);
+      border: 3px dotted #00f2fe;
       border-radius: 50%;
-      z-index: 1;
-      filter: blur(15px); /* Creates the Electric Glow */
+      box-shadow: 0 0 15px #00f2fe, inset 0 0 15px #00f2fe;
+      animation: tunnelMove 2s linear infinite;
+      opacity: 0;
     }
     
-    /* Center Bolt Icon inside spinner */
-    .bolt-icon {
+    .neon-ring:nth-child(2) { animation-delay: 0.5s; border-color: #4facfe; box-shadow: 0 0 15px #4facfe, inset 0 0 15px #4facfe; }
+    .neon-ring:nth-child(3) { animation-delay: 1s; border-color: #007bff; box-shadow: 0 0 15px #007bff, inset 0 0 15px #007bff; }
+    .neon-ring:nth-child(4) { animation-delay: 1.5s; border-color: #6610f2; box-shadow: 0 0 15px #6610f2, inset 0 0 15px #6610f2; }
+    
+    /* Center Core Light */
+    .electric-core {
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 28px;
-      color: #007bff;
-      z-index: 1001;
-      animation: pulseElectric 1.5s ease-in-out infinite;
+      width: 16px; height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 20px 5px #00f2fe;
+      z-index: 10;
     }
 
     .loading-text {
       font-weight: bold;
-      font-size: 15px;
+      font-size: 14px;
       color: #007bff;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      text-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+      text-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
+      margin-top: 10px;
+      text-align: center;
     }
 
-    @keyframes animateElectric {
-      0% { transform: rotate(0deg); filter: hue-rotate(0deg); }
-      100% { transform: rotate(360deg); filter: hue-rotate(360deg); }
-    }
-    @keyframes pulseElectric {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
-      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    /* Infinite 3D Tunnel Motion Keyframes */
+    @keyframes tunnelMove {
+      0% {
+        transform: translateZ(-200px) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateZ(100px) rotate(360deg);
+        opacity: 0;
+      }
     }
   </style>
 </head>
@@ -132,10 +139,14 @@
     </div>
     
     <div id="loadingWrapper">
-      <div class="electric-spinner">
-        <div class="bolt-icon">⚡</div>
+      <div class="electric-container">
+        <div class="electric-core"></div>
+        <div class="neon-ring"></div>
+        <div class="neon-ring"></div>
+        <div class="neon-ring"></div>
+        <div class="neon-ring"></div>
       </div>
-      <div class="loading-text">Loading Data...</div>
+      <div class="loading-text">⚡ FETCHING LIVE MATRIX ⚡</div>
     </div>
     
     <div id="captureArea">
@@ -215,18 +226,17 @@
       var loader = document.getElementById("loadingWrapper");
       var targetArea = document.getElementById("captureArea");
       
-      // Show Loader & Apply Soft Blur
       loader.style.display = "block";
-      targetArea.style.filter = "blur(6px)";
+      targetArea.style.filter = "blur(8px)";
       targetArea.style.pointerEvents = "none";
-      targetArea.style.opacity = "0.4";
+      targetArea.style.opacity = "0.3";
 
       var cacheKey = 'cache_report_' + store.toUpperCase();
       var cachedReport = localStorage.getItem(cacheKey);
       
       if(cachedReport && !document.getElementById("reportTable")) {
         renderHTML(JSON.parse(cachedReport), store);
-        targetArea.style.filter = "blur(6px)";
+        targetArea.style.filter = "blur(8px)";
       }
 
       jsonpRequest(`${APPS_SCRIPT_URL}?action=getReport&branch=${encodeURIComponent(store)}`, 'handleReportData');
@@ -244,7 +254,6 @@
         
         renderHTML(data, selectedStoreGlobal);
         
-        // Remove Blur instantly when loaded
         targetArea.style.filter = "none";
         targetArea.style.pointerEvents = "auto";
         targetArea.style.opacity = "1";
