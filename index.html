@@ -63,16 +63,15 @@
   </div>
 
   <script>
-    // आपका लाइव ऐप्स स्क्रिप्ट यूआरएल
     var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4RdQzfpHy2DvEOnjFPEsGjSVEj98jVHqzuqQPGqvcDt1KvRQNejygdppcMUN6nwk9CQ/exec"; 
     var currentReportData = null;
     var allowedBranch = "";
+    var selectedStoreGlobal = "";
 
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
       allowedBranch = urlParams.get('branch') || "";
 
-      // Instant Caching Mechanism for lightning fast startup
       var cachedStores = localStorage.getItem('cached_store_names');
       if (cachedStores) {
         populateDropdown(JSON.parse(cachedStores));
@@ -86,14 +85,27 @@
       }
     };
 
+    // JSONP Requester Helper
+    function jsonpRequest(url, callbackName) {
+      var oldScript = document.getElementById('jsonp_script_' + callbackName);
+      if (oldScript) oldScript.parentNode.removeChild(oldScript);
+      
+      var script = document.createElement('script');
+      script.id = 'jsonp_script_' + callbackName;
+      script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + callbackName;
+      document.body.appendChild(script);
+    }
+
     function fetchStoreNames() {
-      fetch(`${APPS_SCRIPT_URL}?action=getStoreNames`)
-        .then(res => res.json())
-        .then(stores => {
-          localStorage.setItem('cached_store_names', JSON.stringify(stores));
-          populateDropdown(stores);
-        })
-        .catch(err => console.error(err));
+      jsonpRequest(`${APPS_SCRIPT_URL}?action=getStoreNames`, 'handleStoreNames');
+    }
+
+    // JSONP Callback for names
+    function handleStoreNames(stores) {
+      if(stores && !stores.error) {
+        localStorage.setItem('cached_store_names', JSON.stringify(stores));
+        populateDropdown(stores);
+      }
     }
 
     function populateDropdown(stores) {
@@ -119,11 +131,11 @@
     }
 
     function fetchReportData(store) {
+      selectedStoreGlobal = store;
       var loading = document.getElementById("loading");
       var dlBtn = document.getElementById("downloadBtn");
       loading.style.display = "block";
       
-      // Load Cached report data instantly if available
       var cacheKey = 'cache_report_' + store.toUpperCase();
       var cachedReport = localStorage.getItem(cacheKey);
       if(cachedReport) {
@@ -131,17 +143,18 @@
         loading.style.display = "none";
       }
 
-      // Fetch fresh data in the background seamlessly
-      fetch(`${APPS_SCRIPT_URL}?action=getReport&branch=${encodeURIComponent(store)}`)
-        .then(res => res.json())
-        .then(data => {
-          loading.style.display = "none";
-          localStorage.setItem(cacheKey, JSON.stringify(data));
-          renderHTML(data, store);
-        })
-        .catch(err => {
-          loading.style.display = "none";
-        });
+      jsonpRequest(`${APPS_SCRIPT_URL}?action=getReport&branch=${encodeURIComponent(store)}`, 'handleReportData');
+    }
+
+    // JSONP Callback for main report data
+    function handleReportData(data) {
+      var loading = document.getElementById("loading");
+      loading.style.display = "none";
+      if(data && !data.error) {
+        var cacheKey = 'cache_report_' + selectedStoreGlobal.toUpperCase();
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        renderHTML(data, selectedStoreGlobal);
+      }
     }
 
     function renderHTML(data, store) {
