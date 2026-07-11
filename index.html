@@ -5,12 +5,13 @@
   <title>Store Outstanding Live Dashboard</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; margin: 20px; background-color: #f4f6f8; color: #333; }
-    .report-panel { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f7f9fa; color: #333; }
+    .report-panel { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .row { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end; }
     label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 6px; }
     select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background-color: #fff; }
     
+    /* Buttons Grid Formatting - Original Design */
     .btn-group { display: none; gap: 10px; width: 100%; height: 38px; }
     .download-btn { background-color: #1e7e34; color: white; border: none; padding: 0 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; height: 100%; }
     .download-btn:hover { background-color: #155d27; }
@@ -20,21 +21,20 @@
     
     .last-updated { font-size: 13px; color: #5f6368; font-style: italic; margin-bottom: 15px; font-weight: 500; }
     
-    #captureArea { padding: 15px; background: white; border-radius: 4px; }
+    #captureArea { padding: 10px 0; background: white; }
     
+    /* Original Sleek Table Layout & Borders */
     .report-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 14px; table-layout: auto; transition: filter 0.2s ease; }
-    .report-table th, .report-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; vertical-align: middle; background-color: #fff; }
+    .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; vertical-align: middle; background-color: #fff; }
     
     .table-blur { filter: blur(5px); pointer-events: none; opacity: 0.6; }
     
+    /* Perfect Row & Spreading Behavior */
     .report-table td:nth-child(1) { white-space: normal; word-wrap: break-word; word-break: break-word; }
-    .report-table th:nth-child(2), .report-table td:nth-child(2) { white-space: nowrap; width: 100px; min-width: 100px; text-align: center; }
-    .report-table th:nth-child(3), .report-table td:nth-child(3) { white-space: nowrap !important; width: 110px; min-width: 110px; text-align: left; }
-    .report-table th:nth-child(4), .report-table td:nth-child(4),
-    .report-table th:nth-child(5), .report-table td:nth-child(5) { width: 110px; min-width: 110px; }
+    .report-table td:nth-child(2), .report-table td:nth-child(3) { white-space: nowrap; }
 
     .header-row { background-color: #fff; font-weight: bold; text-align: center; }
-    .header-row td { color: #c2185b; font-size: 16px; text-align: center; }
+    .header-row td { color: #c2185b; font-size: 16px; text-align: center; font-weight: bold; }
     
     .section-title { background-color: #cfd8dc; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 0.5px; }
     .highlight-title { background-color: #78909c; color: white; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 1px; }
@@ -55,7 +55,7 @@
     <div id="updateTimeText" class="last-updated">Initializing...</div>
     <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 20px;">
     
-    <div class="row" style="max-width: 700px;">
+    <div class="row" style="max-width: 750px;">
       <div style="flex: 2;" id="dropdownWrapper">
         <label for="storeDropdown">Select Store Name / Branch:</label>
         <select id="storeDropdown" onchange="loadStoreReport()">
@@ -79,7 +79,6 @@
   </div>
 
   <script>
-    // ⚠️ यहाँ अपना स्टेप 1 में कॉपी किया हुआ नया फ़्रेश URL डालें:
     var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4RdQzfpHy2DvEOnjFPEsGjSVEj98jVHqzuqQPGqvcDt1KvRQNejygdppcMUN6nwk9CQ/exec"; 
     
     var currentReportData = null;
