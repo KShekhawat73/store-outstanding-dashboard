@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <title>Store Outstanding Live Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f7f9fa; color: #333; }
-    .report-panel { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; margin: 20px; background-color: #f4f6f8; color: #333; }
+    .report-panel { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .row { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end; }
     label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 6px; }
     select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background-color: #fff; }
@@ -16,7 +16,7 @@
     .last-updated { font-size: 13px; color: #5f6368; font-style: italic; margin-bottom: 15px; font-weight: 500; }
     
     .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; table-layout: auto; }
-    .report-table th, .report-table td { border: 1px solid #999; padding: 10px 8px; text-align: left; vertical-align: middle; }
+    .report-table th, .report-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; vertical-align: middle; }
     
     .report-table td:nth-child(1) { white-space: normal; word-wrap: break-word; word-break: break-word; }
     .report-table th:nth-child(2), .report-table td:nth-child(2) { white-space: nowrap; width: 100px; min-width: 100px; text-align: center; }
@@ -35,14 +35,15 @@
     .purple-cell { background-color: #d1c4e9; font-weight: bold; }
     .yellow-cell { background-color: #fff9c4; font-weight: bold; }
     .num { text-align: right; white-space: nowrap; }
-    #loading { display: none; font-weight: bold; color: #1a73e8; margin-top: 10px; }
+    
+    #loading { display: none; font-weight: bold; color: #1a73e8; margin-top: 10px; font-size: 14px; }
   </style>
 </head>
 <body>
 
   <div class="report-panel">
     <h2>Store Outstanding Live Dashboard</h2>
-    <div id="updateTimeText" class="last-updated">Loading dashboard details...</div>
+    <div id="updateTimeText" class="last-updated">Initializing...</div>
     <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 20px;">
     
     <div class="row" style="max-width: 600px;">
@@ -53,24 +54,29 @@
         </select>
       </div>
       <div style="flex: 1;">
-        <button id="downloadBtn" class="download-btn" onclick="downloadCSV()">Download Excel (CSV)</button>
+        <button id="downloadBtn" class="download-btn" onclick="downloadCSV()">Download Excel</button>
       </div>
     </div>
     
-    <div id="loading">Fetching data...</div>
+    <div id="loading">⚡ Loading instant data from Google Sheets...</div>
     <div id="reportContainer"></div>
   </div>
 
   <script>
-    // आपका नया और फ्रेश ऐप्स स्क्रिप्ट यूआरएल यहाँ जोड़ दिया गया है
+    // आपका लाइव ऐप्स स्क्रिप्ट यूआरएल
     var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4RdQzfpHy2DvEOnjFPEsGjSVEj98jVHqzuqQPGqvcDt1KvRQNejygdppcMUN6nwk9CQ/exec"; 
     var currentReportData = null;
     var allowedBranch = "";
 
     window.onload = function() {
-      // URL में से ब्रांच पैरामीटर चेक करना (जैसे ?branch=PIPAR)
       const urlParams = new URLSearchParams(window.location.search);
       allowedBranch = urlParams.get('branch') || "";
+
+      // Instant Caching Mechanism for lightning fast startup
+      var cachedStores = localStorage.getItem('cached_store_names');
+      if (cachedStores) {
+        populateDropdown(JSON.parse(cachedStores));
+      }
 
       if (allowedBranch) {
         document.getElementById("dropdownWrapper").style.display = "none";
@@ -82,16 +88,24 @@
 
     function fetchStoreNames() {
       fetch(`${APPS_SCRIPT_URL}?action=getStoreNames`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(stores => {
-          var dropdown = document.getElementById("storeDropdown");
-          dropdown.innerHTML = '<option value="">-- Choose a Store --</option>';
-          stores.forEach(store => {
-            var op = document.createElement("option");
-            op.value = store; op.text = store; dropdown.appendChild(op);
-          });
+          localStorage.setItem('cached_store_names', JSON.stringify(stores));
+          populateDropdown(stores);
         })
-        .catch(err => console.error("Error fetching store names:", err));
+        .catch(err => console.error(err));
+    }
+
+    function populateDropdown(stores) {
+      var dropdown = document.getElementById("storeDropdown");
+      var currentVal = dropdown.value;
+      dropdown.innerHTML = '<option value="">-- Choose a Store --</option>';
+      stores.forEach(store => {
+        var op = document.createElement("option");
+        op.value = store; op.text = store; dropdown.appendChild(op);
+      });
+      if(currentVal) dropdown.value = currentVal;
+      document.getElementById("updateTimeText").innerText = "Ready";
     }
 
     function loadStoreReport() {
@@ -108,56 +122,64 @@
       var loading = document.getElementById("loading");
       var dlBtn = document.getElementById("downloadBtn");
       loading.style.display = "block";
-      dlBtn.style.display = "none";
+      
+      // Load Cached report data instantly if available
+      var cacheKey = 'cache_report_' + store.toUpperCase();
+      var cachedReport = localStorage.getItem(cacheKey);
+      if(cachedReport) {
+        renderHTML(JSON.parse(cachedReport), store);
+        loading.style.display = "none";
+      }
 
+      // Fetch fresh data in the background seamlessly
       fetch(`${APPS_SCRIPT_URL}?action=getReport&branch=${encodeURIComponent(store)}`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
           loading.style.display = "none";
-          if(data.lastUpdated) {
-            document.getElementById("updateTimeText").innerText = data.lastUpdated;
-          }
-          
-          currentReportData = data;
-          dlBtn.style.display = "inline-block"; 
-          
-          var html = `<table class="report-table" id="reportTable">`;
-          html += `<tr class="header-row"><td colspan="2">STORE NAME-</td><td colspan="3">${store.toUpperCase()}</td></tr>`;
-          
-          // --- DEBTOR SECTION ---
-          html += `<tr><th>Debtor</th><th>Date</th><th>Invoice No.</th><th>Invoice Value</th><th>Actual OS Amt.</th></tr>`;
-          var dInvTotal = 0, dOsTotal = 0;
-          data.debtor.forEach(r => {
-            dInvTotal += Number(r[3]) || 0; dOsTotal += Number(r[4]) || 0;
-            html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
-          });
-          html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${dInvTotal}</td><td class="num ${data.debtor.length ? 'blue-total':''}">${dOsTotal}</td></tr>`;
-          
-          // --- FINANCE SECTION ---
-          html += `<tr><td colspan="5" class="section-title">FINANCE OUTSTANDING REPORT</td></tr>`;
-          html += `<tr><th>Financier</th><th>Date</th><th>Invoice No.</th><th>Invoice Value</th><th>Actual OS Amt.</th></tr>`;
-          var fInvTotal = 0, fOsTotal = 0;
-          data.finance.forEach(r => {
-            fInvTotal += Number(r[3]) || 0; fOsTotal += Number(r[4]) || 0;
-            html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
-          });
-          html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${fInvTotal}</td><td class="num ${data.finance.length ? 'blue-total':''}">${fOsTotal}</td></tr>`;
-          
-          // --- SUMMARY OUTSTANDING SECTION ---
-          var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
-          html += `<tr><td colspan="5" class="highlight-title">OUTSTANDING</td></tr>`;
-          html += `<tr><td colspan="3" style="font-weight:bold;">CUSTOMER</td><td colspan="2" class="num" style="font-weight:bold">${dOsTotal}</td></tr>`;
-          html += `<tr><td colspan="3" style="font-weight:bold;">FINANCE</td><td colspan="2" class="num" style="font-weight:bold">${fOsTotal}</td></tr>`;
-          html += `<tr><td colspan="3" style="font-weight:bold;">CASH BALANCE</td><td colspan="2" class="num purple-cell">${data.cash}</td></tr>`;
-          html += `<tr><td colspan="3" style="font-weight:bold">TOTAL</td><td colspan="2" class="num yellow-cell">${grandFinalTotal}</td></tr>`;
-          
-          html += `</table>`;
-          document.getElementById("reportContainer").innerHTML = html;
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+          renderHTML(data, store);
         })
         .catch(err => {
           loading.style.display = "none";
-          console.error("Error fetching report details:", err);
         });
+    }
+
+    function renderHTML(data, store) {
+      if(data.lastUpdated) {
+        document.getElementById("updateTimeText").innerText = data.lastUpdated;
+      }
+      currentReportData = data;
+      document.getElementById("downloadBtn").style.display = "inline-block"; 
+      
+      var html = `<table class="report-table" id="reportTable">`;
+      html += `<tr class="header-row"><td colspan="2">STORE NAME-</td><td colspan="3">${store.toUpperCase()}</td></tr>`;
+      
+      html += `<tr><th>Debtor</th><th>Date</th><th>Invoice No.</th><th>Invoice Value</th><th>Actual OS Amt.</th></tr>`;
+      var dInvTotal = 0, dOsTotal = 0;
+      data.debtor.forEach(r => {
+        dInvTotal += Number(r[3]) || 0; dOsTotal += Number(r[4]) || 0;
+        html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
+      });
+      html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${dInvTotal}</td><td class="num ${data.debtor.length ? 'blue-total':''}">${dOsTotal}</td></tr>`;
+      
+      html += `<tr><td colspan="5" class="section-title">FINANCE OUTSTANDING REPORT</td></tr>`;
+      html += `<tr><th>Financier</th><th>Date</th><th>Invoice No.</th><th>Invoice Value</th><th>Actual OS Amt.</th></tr>`;
+      var fInvTotal = 0, fOsTotal = 0;
+      data.finance.forEach(r => {
+        fInvTotal += Number(r[3]) || 0; fOsTotal += Number(r[4]) || 0;
+        html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
+      });
+      html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${fInvTotal}</td><td class="num ${data.finance.length ? 'blue-total':''}">${fOsTotal}</td></tr>`;
+      
+      var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
+      html += `<tr><td colspan="5" class="highlight-title">OUTSTANDING</td></tr>`;
+      html += `<tr><td colspan="3" style="font-weight:bold;">CUSTOMER</td><td colspan="2" class="num" style="font-weight:bold">${dOsTotal}</td></tr>`;
+      html += `<tr><td colspan="3" style="font-weight:bold;">FINANCE</td><td colspan="2" class="num" style="font-weight:bold">${fOsTotal}</td></tr>`;
+      html += `<tr><td colspan="3" style="font-weight:bold;">CASH BALANCE</td><td colspan="2" class="num purple-cell">${data.cash}</td></tr>`;
+      html += `<tr><td colspan="3" style="font-weight:bold">TOTAL</td><td colspan="2" class="num yellow-cell">${grandFinalTotal}</td></tr>`;
+      
+      html += `</table>`;
+      document.getElementById("reportContainer").innerHTML = html;
     }
 
     function downloadCSV() {
@@ -166,10 +188,8 @@
       
       var data = currentReportData;
       var csvRows = [];
-      
       csvRows.push(`"STORE NAME-","${store.toUpperCase()}","","",""`);
       csvRows.push(""); 
-      
       csvRows.push(`"Debtor","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
       var dInvTotal = 0, dOsTotal = 0;
       data.debtor.forEach(r => {
@@ -178,7 +198,6 @@
       });
       csvRows.push(`"GRAND TOTAL","","",${dInvTotal},${dOsTotal}`);
       csvRows.push(""); 
-      
       csvRows.push(`"FINANCE OUTSTANDING REPORT","","","",""`);
       csvRows.push(`"Financier","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
       var fInvTotal = 0, fOsTotal = 0;
@@ -188,7 +207,6 @@
       });
       csvRows.push(`"GRAND TOTAL","","",${fInvTotal},${fOsTotal}`);
       csvRows.push(""); 
-      
       var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
       csvRows.push(`"OUTSTANDING","","","",""`);
       csvRows.push(`"CUSTOMER","","",,${dOsTotal}`);
@@ -199,7 +217,6 @@
       var csvContent = "\ufeff" + csvRows.join("\n"); 
       var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       var url = URL.createObjectURL(blob);
-      
       var link = document.createElement("a");
       link.setAttribute("href", url);
       link.setAttribute("download", store.toUpperCase() + "_Outstanding_Report.csv");
