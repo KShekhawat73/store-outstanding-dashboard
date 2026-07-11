@@ -11,7 +11,6 @@
     label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 6px; }
     select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background-color: #fff; }
     
-    /* Buttons Grid Formatting - Original Design */
     .btn-group { display: none; gap: 10px; width: 100%; height: 38px; }
     .download-btn { background-color: #1e7e34; color: white; border: none; padding: 0 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; height: 100%; }
     .download-btn:hover { background-color: #155d27; }
@@ -23,26 +22,30 @@
     
     #captureArea { padding: 10px 0; background: white; }
     
-    /* Original Sleek Table Layout & Borders */
-    .report-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 14px; table-layout: auto; transition: filter 0.2s ease; }
+    .report-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; transition: filter 0.2s ease; margin-bottom: 15px; }
     .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; vertical-align: middle; background-color: #fff; }
     
     .table-blur { filter: blur(5px); pointer-events: none; opacity: 0.6; }
     
-    /* Perfect Row & Spreading Behavior */
     .report-table td:nth-child(1) { white-space: normal; word-wrap: break-word; word-break: break-word; }
     .report-table td:nth-child(2), .report-table td:nth-child(3) { white-space: nowrap; }
 
     .header-row { background-color: #fff; font-weight: bold; text-align: center; }
     .header-row td { color: #c2185b; font-size: 16px; text-align: center; font-weight: bold; }
     
-    .section-title { background-color: #cfd8dc; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 0.5px; }
+    /* Highlighted Titles & Rows */
+    .section-title { background-color: #78909c; color: white; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 0.5px; }
     .highlight-title { background-color: #78909c; color: white; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 1px; }
     
-    .grand-total { background-color: #d1e7dd; font-weight: bold; }
-    .blue-total { background-color: #64b5f6; font-weight: bold; }
-    .purple-cell { background-color: #d1c4e9; font-weight: bold; }
-    .yellow-cell { background-color: #fff9c4; font-weight: bold; }
+    /* Grand Total Row Wide Highlight */
+    .grand-total td { background-color: #d1e7dd !important; font-weight: bold !important; }
+    .blue-total { background-color: #64b5f6 !important; font-weight: bold !important; }
+    
+    /* Summary Grid Highlights */
+    .purple-cell td, td.purple-cell { background-color: #d1c4e9 !important; font-weight: bold !important; }
+    .yellow-cell td, td.yellow-cell { background-color: #fff9c4 !important; font-weight: bold !important; }
+    .bold-row td { font-weight: bold !important; }
+    
     .num { text-align: right; white-space: nowrap; }
     
     #loading { display: none; font-weight: bold; color: #1a73e8; margin-top: 10px; font-size: 14px; }
@@ -153,7 +156,10 @@
       loading.style.display = "block";
       
       if(existingTable) {
-        existingTable.classList.add("table-blur");
+        var container = document.getElementById("reportContainer");
+        container.style.filter = "blur(5px)";
+        container.style.pointerEvents = "none";
+        container.style.opacity = "0.6";
       }
 
       var cacheKey = 'cache_report_' + store.toUpperCase();
@@ -161,8 +167,8 @@
       
       if(cachedReport && !existingTable) {
         renderHTML(JSON.parse(cachedReport), store);
-        var newTable = document.getElementById("reportTable");
-        if(newTable) newTable.classList.add("table-blur");
+        var container = document.getElementById("reportContainer");
+        container.style.filter = "blur(5px)";
       }
 
       jsonpRequest(`${APPS_SCRIPT_URL}?action=getReport&branch=${encodeURIComponent(store)}`, 'handleReportData');
@@ -176,10 +182,10 @@
         localStorage.setItem(cacheKey, JSON.stringify(data));
         
         renderHTML(data, selectedStoreGlobal);
-        var currentTable = document.getElementById("reportTable");
-        if(currentTable) {
-          currentTable.classList.remove("table-blur");
-        }
+        var container = document.getElementById("reportContainer");
+        container.style.filter = "none";
+        container.style.pointerEvents = "auto";
+        container.style.opacity = "1";
       }
     }
 
@@ -190,34 +196,61 @@
       currentReportData = data;
       document.getElementById("btnGroup").style.display = "flex"; 
       
-      var html = `<table class="report-table" id="reportTable">`;
-      html += `<tr class="header-row"><td colspan="2">STORE NAME-</td><td colspan="3">${store.toUpperCase()}</td></tr>`;
+      var html = "";
       
-      html += `<tr><th>Debtor</th><th>Date</th><th>Invoice No.</th><th>Invoice Value</th><th>Actual OS Amt.</th></tr>`;
+      // मेन हेडर रो
+      html += `<table class="report-table">`;
+      html += `<tr class="header-row"><td colspan="2">STORE NAME-</td><td colspan="3">${store.toUpperCase()}</td></tr>`;
+      html += `</table>`;
+
       var dInvTotal = 0, dOsTotal = 0;
       data.debtor.forEach(r => {
         dInvTotal += Number(r[3]) || 0; dOsTotal += Number(r[4]) || 0;
-        html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
       });
-      html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${dInvTotal}</td><td class="num ${data.debtor.length ? 'blue-total':''}">${dOsTotal}</td></tr>`;
-      
-      html += `<tr><td colspan="5" class="section-title">FINANCE OUTSTANDING REPORT</td></tr>`;
-      html += `<tr><th>Financier</th><th>Date</th><th>Invoice No.</th><th>Invoice Value</th><th>Actual OS Amt.</th></tr>`;
+
+      // 1. DEBTOR SECTION
+      if (data.debtor.length > 0) {
+        html += `<table class="report-table">`;
+        html += `<tr><th style="width: 30%;">Debtor</th><th style="width: 15%;">Date</th><th style="width: 15%;">Invoice No.</th><th style="width: 20%;">Invoice Value</th><th style="width: 20%;">Actual OS Amt.</th></tr>`;
+        data.debtor.forEach(r => {
+          html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
+        });
+        // GRAND TOTAL पूरी रो और वैल्यूज हाइलाइटेड
+        html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${dInvTotal}</td><td class="num">${dOsTotal}</td></tr>`;
+        html += `</table>`;
+      }
+
       var fInvTotal = 0, fOsTotal = 0;
       data.finance.forEach(r => {
         fInvTotal += Number(r[3]) || 0; fOsTotal += Number(r[4]) || 0;
-        html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
       });
-      html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${fInvTotal}</td><td class="num ${data.finance.length ? 'blue-total':''}">${fOsTotal}</td></tr>`;
-      
+
+      // 2. FINANCE SECTION
+      if (data.finance.length > 0) {
+        html += `<table class="report-table">`;
+        // FINANCE OUTSTANDING REPORT का हेडर डार्क हाइलाइटेड
+        html += `<tr><td colspan="5" class="section-title">FINANCE OUTSTANDING REPORT</td></tr>`;
+        html += `<tr><th style="width: 30%;">Financier</th><th style="width: 15%;">Date</th><th style="width: 15%;">Invoice No.</th><th style="width: 20%;">Invoice Value</th><th style="width: 20%;">Actual OS Amt.</th></tr>`;
+        data.finance.forEach(r => {
+          html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
+        });
+        // GRAND TOTAL पूरी रो और वैल्यूज हाइलाइटेड
+        html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${fInvTotal}</td><td class="num">${fOsTotal}</td></tr>`;
+        html += `</table>`;
+      }
+
+      // 3. FINAL SUMMARY SECTION
       var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
+      html += `<table class="report-table" id="reportTable">`;
       html += `<tr><td colspan="5" class="highlight-title">OUTSTANDING</td></tr>`;
-      html += `<tr><td colspan="3" style="font-weight:bold;">CUSTOMER</td><td colspan="2" class="num" style="font-weight:bold">${dOsTotal}</td></tr>`;
-      html += `<tr><td colspan="3" style="font-weight:bold;">FINANCE</td><td colspan="2" class="num" style="font-weight:bold">${fOsTotal}</td></tr>`;
-      html += `<tr><td colspan="3" style="font-weight:bold;">CASH BALANCE</td><td colspan="2" class="num purple-cell">${data.cash}</td></tr>`;
-      html += `<tr><td colspan="3" style="font-weight:bold">TOTAL</td><td colspan="2" class="num yellow-cell">${grandFinalTotal}</td></tr>`;
-      
+      html += `<tr class="bold-row"><td colspan="3" style="width: 60%;">CUSTOMER</td><td colspan="2" class="num" style="width: 40%;">${dOsTotal}</td></tr>`;
+      html += `<tr class="bold-row"><td colspan="3">FINANCE</td><td colspan="2" class="num">${fOsTotal}</td></tr>`;
+      // CASH BALANCE पूरी रो और वैल्यू पर्पल हाइलाइटेड
+      html += `<tr class="purple-cell"><td colspan="3">CASH BALANCE</td><td colspan="2" class="num">${data.cash}</td></tr>`;
+      // TOTAL पूरी रो और वैल्यू येलो हाइलाइटेड
+      html += `<tr class="yellow-cell"><td colspan="3">TOTAL</td><td colspan="2" class="num">${grandFinalTotal}</td></tr>`;
       html += `</table>`;
+      
       document.getElementById("reportContainer").innerHTML = html;
     }
 
@@ -264,23 +297,34 @@
       var csvRows = [];
       csvRows.push(`"STORE NAME-","${store.toUpperCase()}","","",""`);
       csvRows.push(""); 
-      csvRows.push(`"Debtor","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
+      
       var dInvTotal = 0, dOsTotal = 0;
       data.debtor.forEach(r => {
         dInvTotal += Number(r[3]) || 0; dOsTotal += Number(r[4]) || 0;
-        csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`);
       });
-      csvRows.push(`"GRAND TOTAL","","",${dInvTotal},${dOsTotal}`);
-      csvRows.push(""); 
-      csvRows.push(`"FINANCE OUTSTANDING REPORT","","","",""`);
-      csvRows.push(`"Financier","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
+      if(data.debtor.length > 0) {
+        csvRows.push(`"Debtor","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
+        data.debtor.forEach(r => {
+          csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`);
+        });
+        csvRows.push(`"GRAND TOTAL","","",${dInvTotal},${dOsTotal}`);
+        csvRows.push(""); 
+      }
+      
       var fInvTotal = 0, fOsTotal = 0;
       data.finance.forEach(r => {
         fInvTotal += Number(r[3]) || 0; fOsTotal += Number(r[4]) || 0;
-        csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`);
       });
-      csvRows.push(`"GRAND TOTAL","","",${fInvTotal},${fOsTotal}`);
-      csvRows.push(""); 
+      if(data.finance.length > 0) {
+        csvRows.push(`"FINANCE OUTSTANDING REPORT","","","",""`);
+        csvRows.push(`"Financier","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
+        data.finance.forEach(r => {
+          csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`);
+        });
+        csvRows.push(`"GRAND TOTAL","","",${fInvTotal},${fOsTotal}`);
+        csvRows.push(""); 
+      }
+      
       var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
       csvRows.push(`"OUTSTANDING","","","",""`);
       csvRows.push(`"CUSTOMER","","",,${dOsTotal}`);
