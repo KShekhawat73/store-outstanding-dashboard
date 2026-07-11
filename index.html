@@ -15,8 +15,11 @@
     
     .last-updated { font-size: 13px; color: #5f6368; font-style: italic; margin-bottom: 15px; font-weight: 500; }
     
-    .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; table-layout: auto; }
+    .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; table-layout: auto; transition: filter 0.3s ease; }
     .report-table th, .report-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; vertical-align: middle; }
+    
+    /* Jab data load ho raha hoga tab Table blur karne ke liye CSS class */
+    .table-blur { filter: blur(5px); pointer-events: none; }
     
     .report-table td:nth-child(1) { white-space: normal; word-wrap: break-word; word-break: break-word; }
     .report-table th:nth-child(2), .report-table td:nth-child(2) { white-space: nowrap; width: 100px; min-width: 100px; text-align: center; }
@@ -58,7 +61,7 @@
       </div>
     </div>
     
-    <div id="loading">⚡ Loading instant data from Google Sheets...</div>
+    <div id="loading">⚡ Loading...</div>
     <div id="reportContainer"></div>
   </div>
 
@@ -85,7 +88,6 @@
       }
     };
 
-    // JSONP Requester Helper
     function jsonpRequest(url, callbackName) {
       var oldScript = document.getElementById('jsonp_script_' + callbackName);
       if (oldScript) oldScript.parentNode.removeChild(oldScript);
@@ -100,7 +102,6 @@
       jsonpRequest(`${APPS_SCRIPT_URL}?action=getStoreNames`, 'handleStoreNames');
     }
 
-    // JSONP Callback for names
     function handleStoreNames(stores) {
       if(stores && !stores.error) {
         localStorage.setItem('cached_store_names', JSON.stringify(stores));
@@ -134,26 +135,41 @@
       selectedStoreGlobal = store;
       var loading = document.getElementById("loading");
       var dlBtn = document.getElementById("downloadBtn");
+      var existingTable = document.getElementById("reportTable");
+      
       loading.style.display = "block";
       
+      // Agar pehle se koi table screen par hai, to use instant BLUR class de do
+      if(existingTable) {
+        existingTable.classList.add("table-blur");
+      }
+
       var cacheKey = 'cache_report_' + store.toUpperCase();
       var cachedReport = localStorage.getItem(cacheKey);
-      if(cachedReport) {
+      
+      // Agar cache data hai to pehle render karo (lekin user ne store badla hai isliye tab tak blur rahega jab tak naya response na aa jaye)
+      if(cachedReport && !existingTable) {
         renderHTML(JSON.parse(cachedReport), store);
-        loading.style.display = "none";
+        var newTable = document.getElementById("reportTable");
+        if(newTable) newTable.classList.add("table-blur");
       }
 
       jsonpRequest(`${APPS_SCRIPT_URL}?action=getReport&branch=${encodeURIComponent(store)}`, 'handleReportData');
     }
 
-    // JSONP Callback for main report data
     function handleReportData(data) {
       var loading = document.getElementById("loading");
       loading.style.display = "none";
       if(data && !data.error) {
         var cacheKey = 'cache_report_' + selectedStoreGlobal.toUpperCase();
         localStorage.setItem(cacheKey, JSON.stringify(data));
+        
+        // Naya data aate hi render hoga aur blur class hat jayegi (Visibly Clear ho jayega)
         renderHTML(data, selectedStoreGlobal);
+        var currentTable = document.getElementById("reportTable");
+        if(currentTable) {
+          currentTable.classList.remove("table-blur");
+        }
       }
     }
 
