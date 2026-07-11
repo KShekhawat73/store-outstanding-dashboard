@@ -6,7 +6,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background-color: #f7f9fa; color: #333; }
-    .report-panel { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .report-panel { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
     .row { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end; }
     label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 6px; }
     select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background-color: #fff; }
@@ -20,12 +20,11 @@
     
     .last-updated { font-size: 13px; color: #5f6368; font-style: italic; margin-bottom: 15px; font-weight: 500; }
     
-    #captureArea { padding: 10px 0; background: white; }
+    /* Dynamic Blurred Container */
+    #captureArea { padding: 10px 0; background: white; transition: filter 0.3s ease; }
     
-    .report-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; transition: filter 0.2s ease; margin-bottom: 15px; }
+    .report-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; margin-bottom: 15px; }
     .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; vertical-align: middle; background-color: #fff; }
-    
-    .table-blur { filter: blur(5px); pointer-events: none; opacity: 0.6; }
     
     .report-table td:nth-child(1) { white-space: normal; word-wrap: break-word; word-break: break-word; }
     .report-table td:nth-child(2), .report-table td:nth-child(3) { white-space: nowrap; }
@@ -33,20 +32,80 @@
     .header-row { background-color: #fff; font-weight: bold; text-align: center; }
     .header-row td { color: #c2185b; font-size: 16px; text-align: center; font-weight: bold; }
     
-    /* Headers Highlighting - Dark Grey Background & White Text */
     .section-title td { background-color: #78909c !important; color: white !important; font-weight: bold !important; text-align: center !important; text-transform: uppercase; letter-spacing: 0.5px; font-size: 14px; padding: 10px 12px; border: 1px solid #78909c !important; }
+    .highlight-title { background-color: #78909c; color: white; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 1px; }
     
-    /* Grand Total Highlights */
     .grand-total td { background-color: #d1e7dd !important; font-weight: bold !important; }
-    
-    /* Summary Highlights */
     .purple-cell td, td.purple-cell { background-color: #d1c4e9 !important; font-weight: bold !important; }
     .yellow-cell td, td.yellow-cell { background-color: #fff9c4 !important; font-weight: bold !important; }
     .bold-row td { font-weight: bold !important; }
-    
     .num { text-align: right; white-space: nowrap; }
     
-    #loading { display: none; font-weight: bold; color: #1a73e8; margin-top: 10px; font-size: 14px; }
+    /* ⚡ ADVANCED 3D ELECTRIC LOADER CSS ⚡ */
+    #loadingWrapper {
+      display: none;
+      position: absolute;
+      top: 55%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
+      text-align: center;
+    }
+    
+    /* 3D Electric Ring Spinner */
+    .electric-spinner {
+      position: relative;
+      width: 80px; height: 80px;
+      margin: 0 auto 15px auto;
+      border-radius: 50%;
+      background: linear-gradient(45deg, transparent, transparent 40%, #00f2fe);
+      animation: animateElectric 1s linear infinite;
+    }
+    .electric-spinner:before {
+      content: '';
+      position: absolute;
+      top: 6px; left: 6px; right: 6px; bottom: 6px;
+      background: #fff;
+      border-radius: 50%;
+      z-index: 1000;
+    }
+    .electric-spinner:after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(45deg, transparent, transparent 40%, #00f2fe);
+      border-radius: 50%;
+      z-index: 1;
+      filter: blur(15px); /* Creates the Electric Glow */
+    }
+    
+    /* Center Bolt Icon inside spinner */
+    .bolt-icon {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      color: #007bff;
+      z-index: 1001;
+      animation: pulseElectric 1.5s ease-in-out infinite;
+    }
+
+    .loading-text {
+      font-weight: bold;
+      font-size: 15px;
+      color: #007bff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+    }
+
+    @keyframes animateElectric {
+      0% { transform: rotate(0deg); filter: hue-rotate(0deg); }
+      100% { transform: rotate(360deg); filter: hue-rotate(360deg); }
+    }
+    @keyframes pulseElectric {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -72,7 +131,12 @@
       </div>
     </div>
     
-    <div id="loading">⚡ Loading...</div>
+    <div id="loadingWrapper">
+      <div class="electric-spinner">
+        <div class="bolt-icon">⚡</div>
+      </div>
+      <div class="loading-text">Loading Data...</div>
+    </div>
     
     <div id="captureArea">
       <div id="reportContainer"></div>
@@ -148,42 +212,42 @@
 
     function fetchReportData(store) {
       selectedStoreGlobal = store;
-      var loading = document.getElementById("loading");
-      var existingTable = document.getElementById("reportTable");
+      var loader = document.getElementById("loadingWrapper");
+      var targetArea = document.getElementById("captureArea");
       
-      loading.style.display = "block";
-      
-      if(existingTable) {
-        var container = document.getElementById("reportContainer");
-        container.style.filter = "blur(5px)";
-        container.style.pointerEvents = "none";
-        container.style.opacity = "0.6";
-      }
+      // Show Loader & Apply Soft Blur
+      loader.style.display = "block";
+      targetArea.style.filter = "blur(6px)";
+      targetArea.style.pointerEvents = "none";
+      targetArea.style.opacity = "0.4";
 
       var cacheKey = 'cache_report_' + store.toUpperCase();
       var cachedReport = localStorage.getItem(cacheKey);
       
-      if(cachedReport && !existingTable) {
+      if(cachedReport && !document.getElementById("reportTable")) {
         renderHTML(JSON.parse(cachedReport), store);
-        var container = document.getElementById("reportContainer");
-        container.style.filter = "blur(5px)";
+        targetArea.style.filter = "blur(6px)";
       }
 
       jsonpRequest(`${APPS_SCRIPT_URL}?action=getReport&branch=${encodeURIComponent(store)}`, 'handleReportData');
     }
 
     function handleReportData(data) {
-      var loading = document.getElementById("loading");
-      loading.style.display = "none";
+      var loader = document.getElementById("loadingWrapper");
+      var targetArea = document.getElementById("captureArea");
+      
+      loader.style.display = "none";
+      
       if(data && !data.error) {
         var cacheKey = 'cache_report_' + selectedStoreGlobal.toUpperCase();
         localStorage.setItem(cacheKey, JSON.stringify(data));
         
         renderHTML(data, selectedStoreGlobal);
-        var container = document.getElementById("reportContainer");
-        container.style.filter = "none";
-        container.style.pointerEvents = "auto";
-        container.style.opacity = "1";
+        
+        // Remove Blur instantly when loaded
+        targetArea.style.filter = "none";
+        targetArea.style.pointerEvents = "auto";
+        targetArea.style.opacity = "1";
       }
     }
 
@@ -196,7 +260,6 @@
       
       var html = "";
       
-      // मेन हेडर रो टेबल (हमेशा टॉप पर रहेगा)
       html += `<table class="report-table">`;
       html += `<tr class="header-row"><td colspan="2">STORE NAME-</td><td colspan="3">${store.toUpperCase()}</td></tr>`;
       html += `</table>`;
@@ -206,7 +269,6 @@
         dInvTotal += Number(r[3]) || 0; dOsTotal += Number(r[4]) || 0;
       });
 
-      // 1. DEBTOR SECTION
       if (data.debtor.length > 0) {
         html += `<table class="report-table">`;
         html += `<tr><th style="width: 30%;">Debtor</th><th style="width: 15%;">Date</th><th style="width: 15%;">Invoice No.</th><th style="width: 20%;">Invoice Value</th><th style="width: 20%;">Actual OS Amt.</th></tr>`;
@@ -222,7 +284,6 @@
         fInvTotal += Number(r[3]) || 0; fOsTotal += Number(r[4]) || 0;
       });
 
-      // 2. FINANCE SECTION
       if (data.finance.length > 0) {
         html += `<table class="report-table">`;
         html += `<tr class="section-title"><td colspan="5">FINANCE OUTSTANDING REPORT</td></tr>`;
@@ -234,7 +295,6 @@
         html += `</table>`;
       }
 
-      // 3. FINAL SUMMARY SECTION (विज़िबल OUTSTANDING हेडर के साथ फिक्स किया हुआ)
       var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
       html += `<table class="report-table" id="reportTable">`;
       html += `<tr class="section-title"><td colspan="5">OUTSTANDING</td></tr>`;
@@ -247,7 +307,6 @@
       document.getElementById("reportContainer").innerHTML = html;
     }
 
-    // बाकी के फंक्शन्स (copyTableScreenshot, downloadCSV) पहले जैसे ही रहेंगे...
     function copyTableScreenshot() {
       var target = document.getElementById("captureArea");
       var btn = document.getElementById("screenshotBtn");
