@@ -33,15 +33,13 @@
     .header-row { background-color: #fff; font-weight: bold; text-align: center; }
     .header-row td { color: #c2185b; font-size: 16px; text-align: center; font-weight: bold; }
     
-    /* Highlighted Titles & Rows */
-    .section-title { background-color: #78909c; color: white; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 0.5px; }
-    .highlight-title { background-color: #78909c; color: white; font-weight: bold; text-align: center !important; text-transform: uppercase; letter-spacing: 1px; }
+    /* Headers Highlighting - Dark Grey Background & White Text */
+    .section-title td { background-color: #78909c !important; color: white !important; font-weight: bold !important; text-align: center !important; text-transform: uppercase; letter-spacing: 0.5px; font-size: 14px; padding: 10px 12px; border: 1px solid #78909c !important; }
     
-    /* Grand Total Row Wide Highlight */
+    /* Grand Total Highlights */
     .grand-total td { background-color: #d1e7dd !important; font-weight: bold !important; }
-    .blue-total { background-color: #64b5f6 !important; font-weight: bold !important; }
     
-    /* Summary Grid Highlights */
+    /* Summary Highlights */
     .purple-cell td, td.purple-cell { background-color: #d1c4e9 !important; font-weight: bold !important; }
     .yellow-cell td, td.yellow-cell { background-color: #fff9c4 !important; font-weight: bold !important; }
     .bold-row td { font-weight: bold !important; }
@@ -198,7 +196,7 @@
       
       var html = "";
       
-      // मेन हेडर रो
+      // मेन हेडर रो टेबल (हमेशा टॉप पर रहेगा)
       html += `<table class="report-table">`;
       html += `<tr class="header-row"><td colspan="2">STORE NAME-</td><td colspan="3">${store.toUpperCase()}</td></tr>`;
       html += `</table>`;
@@ -215,7 +213,6 @@
         data.debtor.forEach(r => {
           html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
         });
-        // GRAND TOTAL पूरी रो और वैल्यूज हाइलाइटेड
         html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${dInvTotal}</td><td class="num">${dOsTotal}</td></tr>`;
         html += `</table>`;
       }
@@ -228,39 +225,34 @@
       // 2. FINANCE SECTION
       if (data.finance.length > 0) {
         html += `<table class="report-table">`;
-        // FINANCE OUTSTANDING REPORT का हेडर डार्क हाइलाइटेड
-        html += `<tr><td colspan="5" class="section-title">FINANCE OUTSTANDING REPORT</td></tr>`;
+        html += `<tr class="section-title"><td colspan="5">FINANCE OUTSTANDING REPORT</td></tr>`;
         html += `<tr><th style="width: 30%;">Financier</th><th style="width: 15%;">Date</th><th style="width: 15%;">Invoice No.</th><th style="width: 20%;">Invoice Value</th><th style="width: 20%;">Actual OS Amt.</th></tr>`;
         data.finance.forEach(r => {
           html += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`;
         });
-        // GRAND TOTAL पूरी रो और वैल्यूज हाइलाइटेड
         html += `<tr class="grand-total"><td colspan="3" style="text-align:center">GRAND TOTAL</td><td class="num">${fInvTotal}</td><td class="num">${fOsTotal}</td></tr>`;
         html += `</table>`;
       }
 
-      // 3. FINAL SUMMARY SECTION
+      // 3. FINAL SUMMARY SECTION (विज़िबल OUTSTANDING हेडर के साथ फिक्स किया हुआ)
       var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
       html += `<table class="report-table" id="reportTable">`;
-      html += `<tr><td colspan="5" class="highlight-title">OUTSTANDING</td></tr>`;
+      html += `<tr class="section-title"><td colspan="5">OUTSTANDING</td></tr>`;
       html += `<tr class="bold-row"><td colspan="3" style="width: 60%;">CUSTOMER</td><td colspan="2" class="num" style="width: 40%;">${dOsTotal}</td></tr>`;
       html += `<tr class="bold-row"><td colspan="3">FINANCE</td><td colspan="2" class="num">${fOsTotal}</td></tr>`;
-      // CASH BALANCE पूरी रो और वैल्यू पर्पल हाइलाइटेड
       html += `<tr class="purple-cell"><td colspan="3">CASH BALANCE</td><td colspan="2" class="num">${data.cash}</td></tr>`;
-      // TOTAL पूरी रो और वैल्यू येलो हाइलाइटेड
       html += `<tr class="yellow-cell"><td colspan="3">TOTAL</td><td colspan="2" class="num">${grandFinalTotal}</td></tr>`;
       html += `</table>`;
       
       document.getElementById("reportContainer").innerHTML = html;
     }
 
+    // बाकी के फंक्शन्स (copyTableScreenshot, downloadCSV) पहले जैसे ही रहेंगे...
     function copyTableScreenshot() {
       var target = document.getElementById("captureArea");
       var btn = document.getElementById("screenshotBtn");
-      
       btn.innerText = "Capturing...";
       btn.style.backgroundColor = "#ffc107";
-      
       html2canvas(target, { scale: 2, useCORS: true }).then(canvas => {
         canvas.toBlob(blob => {
           if (navigator.clipboard && navigator.clipboard.write) {
@@ -268,18 +260,9 @@
             navigator.clipboard.write([item]).then(() => {
               btn.innerText = "Copied! ✓";
               btn.style.backgroundColor = "#28a745";
-              setTimeout(() => {
-                btn.innerText = "Copy Screenshot";
-                btn.style.backgroundColor = "#007bff";
-              }, 2000);
-            }).catch(err => {
-              alert("Clipboard error. Please try again.");
-              resetBtn(btn);
-            });
-          } else {
-            alert("Not supported on this browser.");
-            resetBtn(btn);
-          }
+              setTimeout(() => { resetBtn(btn); }, 2000);
+            }).catch(err => { alert("Clipboard error."); resetBtn(btn); });
+          } else { alert("Not supported."); resetBtn(btn); }
         });
       });
     }
@@ -292,41 +275,29 @@
     function downloadCSV() {
       var store = allowedBranch || document.getElementById("storeDropdown").value;
       if (!store || !currentReportData) return;
-      
       var data = currentReportData;
       var csvRows = [];
       csvRows.push(`"STORE NAME-","${store.toUpperCase()}","","",""`);
       csvRows.push(""); 
-      
       var dInvTotal = 0, dOsTotal = 0;
-      data.debtor.forEach(r => {
-        dInvTotal += Number(r[3]) || 0; dOsTotal += Number(r[4]) || 0;
-      });
+      data.debtor.forEach(r => { dInvTotal += Number(r[3])||0; dOsTotal += Number(r[4])||0; });
       if(data.debtor.length > 0) {
         csvRows.push(`"Debtor","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
-        data.debtor.forEach(r => {
-          csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`);
-        });
+        data.debtor.forEach(r => { csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`); });
         csvRows.push(`"GRAND TOTAL","","",${dInvTotal},${dOsTotal}`);
         csvRows.push(""); 
       }
-      
       var fInvTotal = 0, fOsTotal = 0;
-      data.finance.forEach(r => {
-        fInvTotal += Number(r[3]) || 0; fOsTotal += Number(r[4]) || 0;
-      });
+      data.finance.forEach(r => { fInvTotal += Number(r[3])||0; fOsTotal += Number(r[4])||0; });
       if(data.finance.length > 0) {
         csvRows.push(`"FINANCE OUTSTANDING REPORT","","","",""`);
         csvRows.push(`"Financier","Date","Invoice No.","Invoice Value","Actual OS Amt."`);
-        data.finance.forEach(r => {
-          csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`);
-        });
+        data.finance.forEach(r => { csvRows.push(`"${r[0]}","${r[1]}","${r[2]}",${r[3]},${r[4]}`); });
         csvRows.push(`"GRAND TOTAL","","",${fInvTotal},${fOsTotal}`);
         csvRows.push(""); 
       }
-      
       var grandFinalTotal = dOsTotal + fOsTotal + data.cash;
-      csvRows.push(`"OUTSTANDING","","","",""`);
+      csvRows.push(`"OUTSTANDING"`);
       csvRows.push(`"CUSTOMER","","",,${dOsTotal}`);
       csvRows.push(`"FINANCE","","",,${fOsTotal}`);
       csvRows.push(`"CASH BALANCE","","",,${data.cash}`);
