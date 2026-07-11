@@ -62,12 +62,13 @@
   </div>
 
   <script>
-    // आपका लाइव ऐप्स स्क्रिप्ट यूआरएल यहाँ फिक्स कर दिया गया है
-    var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5NYKpptbt7k_SHjh5MGoyvcvCUbeb5DYZ1F8xkFuRvjmxwCkCz14w_BakIMKItvQUzw/exec"; 
+    // आपका नया और फ्रेश ऐप्स स्क्रिप्ट यूआरएल यहाँ जोड़ दिया गया है
+    var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4RdQzfpHy2DvEOnjFPEsGjSVEj98jVHqzuqQPGqvcDt1KvRQNejygdppcMUN6nwk9CQ/exec"; 
     var currentReportData = null;
     var allowedBranch = "";
 
     window.onload = function() {
+      // URL में से ब्रांच पैरामीटर चेक करना (जैसे ?branch=PIPAR)
       const urlParams = new URLSearchParams(window.location.search);
       allowedBranch = urlParams.get('branch') || "";
 
