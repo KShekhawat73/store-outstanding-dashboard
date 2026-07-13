@@ -47,7 +47,7 @@
       top: 55%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 999;
-      perspective: 300px; /* 3D Depth Perspective like mobile image */
+      perspective: 300px;
     }
     
     .electric-container {
@@ -58,7 +58,6 @@
       margin: 0 auto 20px auto;
     }
     
-    /* Creating the Glowing Perspective Electric Rings */
     .neon-ring {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -73,7 +72,6 @@
     .neon-ring:nth-child(3) { animation-delay: 1s; border-color: #007bff; box-shadow: 0 0 15px #007bff, inset 0 0 15px #007bff; }
     .neon-ring:nth-child(4) { animation-delay: 1.5s; border-color: #6610f2; box-shadow: 0 0 15px #6610f2, inset 0 0 15px #6610f2; }
     
-    /* Center Core Light */
     .electric-core {
       position: absolute;
       top: 50%; left: 50%;
@@ -96,22 +94,11 @@
       text-align: center;
     }
 
-    /* Infinite 3D Tunnel Motion Keyframes */
     @keyframes tunnelMove {
-      0% {
-        transform: translateZ(-200px) rotate(0deg);
-        opacity: 0;
-      }
-      10% {
-        opacity: 1;
-      }
-      90% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateZ(100px) rotate(360deg);
-        opacity: 0;
-      }
+      0% { transform: translateZ(-200px) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateZ(100px) rotate(360deg); opacity: 0; }
     }
   </style>
 </head>
@@ -160,8 +147,21 @@
     var currentReportData = null;
     var allowedBranch = "";
     var selectedStoreGlobal = "";
+    var userAllowedStores = [];
+    var isSuperAdmin = false;
 
     window.onload = function() {
+      // 🛠️ Fetch permission configs passed from the main dashboard
+      const rawPermissions = (localStorage.getItem('allowed_stores') || '').toLowerCase().trim();
+      
+      // If permission is 'all' or 'yes', let them access everything
+      if (rawPermissions === 'all' || rawPermissions === 'yes') {
+        isSuperAdmin = true;
+      } else if (rawPermissions) {
+        // Split comma-separated list into a clean array (e.g., ['chb', 'pal'])
+        userAllowedStores = rawPermissions.split(',').map(s => s.trim());
+      }
+
       const urlParams = new URLSearchParams(window.location.search);
       allowedBranch = urlParams.get('branch') || "";
 
@@ -203,10 +203,19 @@
       var dropdown = document.getElementById("storeDropdown");
       var currentVal = dropdown.value;
       dropdown.innerHTML = '<option value="">-- Choose a Store --</option>';
+      
       stores.forEach(store => {
-        var op = document.createElement("option");
-        op.value = store; op.text = store; dropdown.appendChild(op);
+        const cleanStoreName = store.toLowerCase().trim();
+        
+        // 🛠️ Filter rule: Show store if super admin, or if store name matches user's allowed array
+        if (isSuperAdmin || userAllowedStores.includes(cleanStoreName)) {
+          var op = document.createElement("option");
+          op.value = store; 
+          op.text = store; 
+          dropdown.appendChild(op);
+        }
       });
+      
       if(currentVal) dropdown.value = currentVal;
       document.getElementById("updateTimeText").innerText = "Ready";
     }
